@@ -8,11 +8,13 @@ RUN go mod download
 
 COPY . .
 
+RUN apk add --no-cache git && go mod tidy -v 2>&1
+
 ARG VERSION=dev
 ARG COMMIT=none
 ARG BUILD_DATE=unknown
 
-RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -v -ldflags="-s -w -X 'main.Version=${VERSION}' -X 'main.Commit=${COMMIT}' -X 'main.BuildDate=${BUILD_DATE}'" -o ./CLIProxyAPI ./cmd/server/ 2>&1
+RUN CGO_ENABLED=0 GOOS=linux go build -v -ldflags="-s -w -X 'main.Version=${VERSION}' -X 'main.Commit=${COMMIT}' -X 'main.BuildDate=${BUILD_DATE}'" -o ./CLIProxyAPI ./cmd/server/ 2>&1
 
 FROM alpine:3.22.0
 
