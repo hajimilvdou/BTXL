@@ -164,6 +164,7 @@ type TemplateStore interface {
 	GetTemplateByID(ctx context.Context, id int64) (*RedemptionTemplate, error)
 	ListTemplates(ctx context.Context) ([]*RedemptionTemplate, error)
 	IncrementTemplateIssuedCount(ctx context.Context, id int64) error
+	DecrementTemplateIssuedCount(ctx context.Context, id int64) error
 	CountTemplateClaimsByUser(ctx context.Context, userID, templateID int64) (int, error)
 }
 
