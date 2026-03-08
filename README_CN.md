@@ -14,7 +14,7 @@
 - 账号注册 + 邮箱验证码（SMTP）
 - JWT 认证体系（Access Token + Refresh Token）
 - 邀请码 & 推荐系统，双向额度奖励
-- 每用户独立 API Key，直接对接代理 API
+- 每用户独立 API Key，可直接对接代理 API
 
 ### 额度与凭证管理
 - 模型级别额度分配（请求次数 / Token 上限）
