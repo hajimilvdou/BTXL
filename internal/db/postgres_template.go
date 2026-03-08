@@ -87,6 +87,17 @@ func (s *PostgresStore) IncrementTemplateIssuedCount(ctx context.Context, id int
 	return nil
 }
 
+// DecrementTemplateIssuedCount 补偿性递减模板已发放数（后续步骤失败时回滚）
+func (s *PostgresStore) DecrementTemplateIssuedCount(ctx context.Context, id int64) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE redemption_templates SET issued_count = issued_count - 1
+		 WHERE id = $1 AND issued_count > 0`, id)
+	if err != nil {
+		return fmt.Errorf("回滚模板发放数失败: %w", err)
+	}
+	return nil
+}
+
 // CountTemplateClaimsByUser 统计用户对某模板的领取次数
 // 通过 invite_codes 表统计: bonus_quota JSONB 匹配
 func (s *PostgresStore) CountTemplateClaimsByUser(ctx context.Context, userID, templateID int64) (int, error) {
