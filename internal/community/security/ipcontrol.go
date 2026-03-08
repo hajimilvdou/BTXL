@@ -158,3 +158,9 @@ func normalizeCIDR(s string) string {
 	}
 	return s + "/128"
 }
+
+// extractIP 从 Gin 上下文提取客户端 IP 地址
+// 内部委托 Gin 的 ClientIP()，遵循 TrustedProxies 配置
+func extractIP(c *gin.Context) string {
+	return c.ClientIP()
+}
