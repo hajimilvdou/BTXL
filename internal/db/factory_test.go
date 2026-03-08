@@ -37,10 +37,10 @@ func TestNewStore_InvalidDriver(t *testing.T) {
 	}
 }
 
-func TestNewStore_Postgres_NotImplemented(t *testing.T) {
+func TestNewStore_Postgres_EmptyDSN(t *testing.T) {
 	ctx := context.Background()
 	_, err := db.NewStore(ctx, "postgres", "")
 	if err == nil {
-		t.Fatal("PostgreSQL 尚未实现，期望返回错误")
+		t.Fatal("空 DSN 应返回错误")
 	}
 }

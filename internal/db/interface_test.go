@@ -11,9 +11,14 @@ func TestStoreInterfaceCompiles(t *testing.T) {
 	// 编译时类型检查：确保接口定义无语法错误
 	var _ db.Store = nil
 	var _ db.UserStore = nil
+	var _ db.InviteCodeStore = nil
 	var _ db.QuotaStore = nil
 	var _ db.CredentialStore = nil
 	var _ db.SecurityStore = nil
+	var _ db.TemplateStore = nil
 	var _ db.SettingsStore = nil
 	var _ db.StatsStore = nil
+
+	// 编译时实现检查：确保具体类型满足 Store 接口
+	var _ db.Store = (*db.PostgresStore)(nil)
 }
