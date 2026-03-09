@@ -1,123 +1,240 @@
-# 冰糖雪梨
+# BTXL
 
 [English](README.md) | 中文
 
-基于 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 二创的开源公益站 — 通过额度分发系统为社区提供免费 AI 模型访问。
+BTXL（冰糖雪梨）是一个基于 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 二次开发的开源社区额度平台。它将原本偏单用户、本地化的 CLI 代理，扩展为支持用户注册、额度分发、共享凭证池调度、风控审计以及 Web 面板管理的多用户服务。
 
-## 冰糖雪梨是什么？
+## 项目定位
 
-冰糖雪梨将 CLIProxyAPI 从个人 CLI 代理工具扩展为**多用户公益额度分发平台**。用户注册账号后，通过兑换码领取额度，即可使用共享凭证池访问 AI 模型（Claude、Gemini、OpenAI 等），所有功能均通过现代化 Web 面板管理。
+BTXL 面向的是“运营一个共享 AI 访问平台”的场景，而不只是“自己本地跑一个代理”。
 
-## 功能特性
+典型链路如下：
 
-### 用户体系
-- 账号注册 + 邮箱验证码（SMTP）
-- JWT 认证体系（Access Token + Refresh Token）
-- 邀请码 & 推荐系统，双向额度奖励
-- 每用户独立 API Key，可直接对接代理 API
+1. 管理员配置上游凭证、模型路由和安全策略。
+2. 用户注册账号，通过邀请码 / 兑换码领取额度。
+3. 请求以 OpenAI / Claude / Gemini 兼容方式进入 BTXL。
+4. BTXL 根据路由、额度和风控策略选择上游凭证并转发。
+5. 管理员通过 Web 面板管理用户、凭证、额度和系统配置。
 
-### 额度与凭证管理
-- 模型级别额度分配（请求次数 / Token 上限）
-- 兑换码模板，用户自助领取
-- 共享凭证池 + 加权负载均衡
-- 贡献者池 / 公共池 / 独立池三种模式
+## 相比上游 CLIProxyAPI 的增强
 
-### 管理后台
-- 实时仪表盘：请求趋势、模型分布图表
-- 用户管理：封禁/解封、角色分配
-- 凭证池健康监控
-- 兑换码批量生成 & 模板管理
-- 按模型配置额度规则
-- 路由引擎调优（策略、权重、健康检查）
-- 系统设置（SMTP、OAuth、通用配置）
-
-### 安全防护
-- IP 黑白名单（CIDR 格式）
-- 全局 & 单 IP 速率限制
-- 异常行为检测（高频访问、模型扫描、错误激增）
-- 风险标记 + 自动过期
-- 完整审计日志
-- 验证码恒定时间比对
-- 全链路加密安全随机数
-
-### 前端面板
-- React 19 + Tailwind CSS + Vite 单页应用
-- 响应式设计，移动端侧边栏抽屉
-- 中英双语 UI（Zustand i18n 状态管理）
-- 挂载于 `/panel` 路径，与代理 API 并行服务
+- 多用户社区平台能力
+- 额度模板、兑换码、邀请 / 返佣流程
+- 共享凭证池与调度策略
+- 用户端 / 管理端 Web 面板
+- IP 控制、限流、异常检测、审计日志
+- 面向社区运营，而不仅是本地单用户代理
 
 ## 技术栈
 
 | 层级 | 技术 |
-|------|------|
-| 后端 | Go 1.26、Gin、modernc.org/sqlite（无 CGO） |
-| 前端 | React 19、TypeScript、Tailwind CSS、Vite、Zustand、Recharts |
-| 认证 | JWT HS256（密钥最低 32 字节） |
-| 数据库 | SQLite（WAL 模式） |
-| 容器 | Docker 多架构（amd64 + arm64） |
+| --- | --- |
+| 后端 | Go 1.26、Gin |
+| 数据库 | 默认 SQLite（`modernc.org/sqlite`，无 CGO），部分场景支持 PostgreSQL |
+| 前端 | React 19、TypeScript、Vite、Tailwind CSS、Zustand、Recharts |
+| 认证 | JWT + 各厂商 OAuth 流程 |
+| 容器 | Docker 多架构镜像 |
 | CI/CD | GitHub Actions + GHCR |
 
-## 快速开始
+## 端口说明
 
-### Docker Compose（推荐）
+这是本仓库部署时最容易混淆、也最关键的一部分。
+
+### 服务器真正需要开放的端口
+
+| 端口 | 是否必须 | 作用 |
+| --- | --- | --- |
+| `8317` | 是 | 主 HTTP 服务端口。承载代理 API；若配置开启社区模块，也会承载 Web 面板和相关管理路由。 |
+
+### OAuth 回调辅助端口
+
+下面这些端口虽然在代码中存在，但它们**不是常规服务器运行端口**，也**不应该**在标准 Docker 服务器部署中对外暴露。
+
+| 端口 | 对应流程 | 作用 |
+| --- | --- | --- |
+| `8085` | Gemini | Gemini OAuth 登录时使用的 localhost 回调端口 |
+| `1455` | Codex / OpenAI OAuth | Codex / OpenAI OAuth 登录时使用的 localhost 回调端口 |
+| `54545` | Claude | Claude OAuth 登录时使用的 localhost 回调端口 |
+| `51121` | Antigravity | Antigravity OAuth 登录时使用的 localhost 回调端口 |
+| `11451` | iFlow | iFlow OAuth 登录时使用的 localhost 回调端口 |
+
+请注意：
+
+- **容器化服务器部署时，只需要发布 `8317`。**
+- 把这些回调端口映射到公网，**并不能**让远程 Web 面板 OAuth 自动恢复正常。
+- 如果你的部署面板 / PaaS 会根据镜像自动识别并开放端口，它理论上只需要处理 `8317`。
+
+## 为什么之前的部署看起来“不对”
+
+旧的 `docker-compose.yml` 同时暴露了多个 OAuth 回调端口，这在服务器部署场景里会造成误导，原因有三点：
+
+- 应用作为常规 HTTP 服务，真正长期监听的只有主端口（默认 `8317`）；
+- 额外端口属于特定 OAuth 辅助回调流程，不是公网服务端口；
+- 很多服务器部署平台只会关注镜像的真实服务端口，错误地把回调端口当成“必须开放端口”会让排障方向跑偏。
+
+现在仓库已将 Docker 运行语义统一为：**标准服务端口只有 `8317`。**
+
+## Docker 部署
+
+### Docker Compose
+
+当前 compose 的服务名和容器名都已经改为 `btxl`。
 
 ```bash
-# 1. 克隆仓库
 git clone https://github.com/hajimilvdou/BTXL.git
 cd BTXL
 
-# 2. 复制并编辑配置
 cp config.example.yaml config.yaml
-# 编辑 config.yaml 填入你的配置
+# 生产环境请先编辑 config.yaml
 
-# 3. 启动服务
 docker compose up -d
 ```
 
-服务暴露端口：
-- **8317** — API 代理 + 管理面板 (`/panel`)
+当前 compose 行为：
 
-### 环境变量
+- 服务名：`btxl`
+- 容器名：`btxl`
+- 对外端口：`8317:8317`
+- 容器内配置文件挂载路径：`/opt/btxl/config.yaml`
+- 容器内认证目录挂载路径：`/root/.btxl`
+- 容器内日志目录挂载路径：`/opt/btxl/logs`
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `CLI_PROXY_IMAGE` | `ghcr.io/hajimilvdou/btxl:latest` | Docker 镜像地址 |
-| `CLI_PROXY_CONFIG_PATH` | `./config.yaml` | 配置文件路径 |
-| `CLI_PROXY_AUTH_PATH` | `./auths` | OAuth 凭证目录 |
-| `CLI_PROXY_LOG_PATH` | `./logs` | 日志目录 |
+### 直接拉镜像部署
 
-### 源码构建
+镜像地址：
 
 ```bash
-# 需要 Go 1.26+
-go build -o bingtang-xueli ./cmd/server/
-./bingtang-xueli
+ghcr.io/hajimilvdou/btxl:latest
 ```
+
+镜像内部现在会自带一份由 `config.example.yaml` 生成的兜底 `/opt/btxl/config.yaml`，这样服务器面板直接拉镜像时，容器启动行为会更可预测。
+
+但正式部署时，仍然建议挂载自己的配置和持久化目录：
+
+```bash
+docker run -d \
+  --name btxl \
+  -p 8317:8317 \
+  -v $(pwd)/config.yaml:/opt/btxl/config.yaml \
+  -v $(pwd)/auths:/root/.btxl \
+  -v $(pwd)/logs:/opt/btxl/logs \
+  ghcr.io/hajimilvdou/btxl:latest
+```
+
+### Docker 环境变量
+
+| 变量名 | 默认值 | 作用 |
+| --- | --- | --- |
+| `BTXL_IMAGE` | `ghcr.io/hajimilvdou/btxl:latest` | `docker compose` 使用的镜像标签 |
+| `BTXL_CONFIG_PATH` | `./config.yaml` | 宿主机配置文件挂载路径 |
+| `BTXL_AUTH_PATH` | `./auths` | 宿主机认证目录，挂载到 `/root/.btxl` |
+| `BTXL_LOG_PATH` | `./logs` | 宿主机日志目录挂载路径 |
+
+## 配置说明
+
+### `config.example.yaml`
+
+仓库自带的是“可启动模板”，但你仍然需要在生产环境中修改关键项。
+
+重点关注：
+
+- `port`：主服务端口，默认 `8317`
+- `api-keys`：给客户端使用的 API Key
+- `auth-dir`：上游凭证存放目录
+- `remote-management.secret-key`：管理接口密钥
+- `community.*`：BTXL 社区平台功能配置
+
+### Web 面板为何可能访问不到
+
+仓库里有前端代码，不代表 `/panel` 会默认生效。
+
+旧的上游管理页已经从 BTXL 中移除。
+
+若要启用 BTXL 的社区面板，需要在配置文件中显式开启社区模块，例如：
+
+```yaml
+community:
+  enabled: true
+  panel:
+    enabled: true
+    base-path: "/panel"
+```
+
+如果 `community.enabled` 没开，代理服务依然可能正常启动，但社区面板路由不会注册，因此访问 `/panel` 会得到 `404`。
+
+BTXL 现在只保留新的社区面板 `/panel`。
+
+## GitHub Actions 与镜像发布
+
+仓库当前已经通过 GitHub Actions 自动发布镜像到 GHCR。
+
+现有链路为：
+
+1. `docker-image.yml` 构建 `amd64` / `arm64` 镜像；
+2. 推送各架构镜像标签；
+3. 生成并推送 multi-arch manifest；
+4. 服务器端直接拉取 `ghcr.io/hajimilvdou/btxl:latest` 部署。
+
+服务器部署建议：
+
+- 只发布 `8317`；
+- 正式环境挂载真实 `config.yaml`；
+- 持久化 `auths` 和 `logs`；
+- 不要把 OAuth 回调端口误当成公网服务端口。
+
+## 本地构建
+
+### 编译二进制
+
+```bash
+go build -o btxl ./cmd/server
+./btxl
+```
+
+### Docker 辅助脚本
+
+- `docker-build.sh`
+- `docker-build.ps1`
+
+这两个脚本现在统一使用本地镜像标签 `btxl:local`。
 
 ## 项目结构
 
+```text
+cmd/server/              启动入口
+internal/community/      BTXL 社区平台核心
+internal/panel/web/      React 前端
+internal/api/            HTTP 服务与管理接口
+auths/                   本地上游凭证目录
+docs/                    项目文档
+test/                    集成 / 回归测试
 ```
-internal/
-  community/           # 公益站扩展层
-    user/              # 认证、JWT、邮箱验证
-    quota/             # 额度引擎、风控
-    credential/        # 兑换、推荐、模板
-    security/          # IP 控制、限流、异常检测、审计
-    stats/             # 请求统计
-    community.go       # 统一初始化入口
-  panel/web/           # React SPA 前端
-    src/pages/         # 认证 / 用户 / 管理页面
-    src/api/           # TypeScript API 客户端
-    src/stores/        # Zustand 状态管理
-    src/i18n/          # 中英双语翻译
-  db/                  # SQLite 存储 + 迁移脚本
-  translator/          # 上游 API 格式翻译（核心层）
-```
+
+## 常见问题
+
+### 容器启动了，但服务访问不到
+
+建议按这个顺序排查：
+
+1. 确认平台是否真的开放了 `8317`；
+2. 确认容器使用的是有效的 `config.yaml`；
+3. 确认当前不是“云部署模式等待配置”状态；
+4. 确认挂载进去的 YAML 没有语法错误，且 `port` 配置合法。
+
+### 服务器部署后，Web 面板里某些 OAuth 登录流程无法完成
+
+这通常**不是**简单的 Docker 端口映射问题。
+
+因为相关流程依赖 `localhost` 回调语义，所以把 `8085`、`1455`、`54545`、`51121`、`11451` 暴露到公网，通常也不是正确修复方式。
+
+### `/panel` 访问是 404
+
+检查 `config.yaml` 中是否启用了 `community.enabled` 与 `community.panel.enabled`。
 
 ## 致谢
 
 本项目基于 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)（Router-For.ME）二次开发。
 
-## 许可证
+## License
 
-本项目基于 MIT 许可证授权 — 详见 [LICENSE](LICENSE) 文件。
+MIT，详见 `LICENSE`。

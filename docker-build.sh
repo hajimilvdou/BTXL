@@ -17,11 +17,25 @@ SECRET_FILE="${STATS_DIR}/.api_secret"
 WITH_USAGE=false
 
 get_port() {
-  if [[ -f "config.yaml" ]]; then
-    grep -E "^port:" config.yaml | sed -E 's/^port: *["'"'"']?([0-9]+)["'"'"']?.*$/\1/'
+  local config_path="${BTXL_CONFIG_PATH:-./config.yaml}"
+
+  if [[ -f "${config_path}" ]]; then
+    grep -E "^port:" "${config_path}" | sed -E 's/^port: *["'"'"']?([0-9]+)["'"'"']?.*$/\1/'
   else
     echo "8317"
   fi
+}
+
+get_http_status() {
+  local port
+  port=$(get_port)
+  curl -s -o /dev/null -w "%{http_code}" --max-time 2 "http://localhost:${port}/"
+}
+
+is_service_reachable() {
+  local status
+  status=$(get_http_status)
+  [[ "${status}" != "000" ]]
 }
 
 export_stats_api_secret() {
@@ -43,8 +57,8 @@ check_container_running() {
   local port
   port=$(get_port)
 
-  if ! curl -s -o /dev/null -w "%{http_code}" "http://localhost:${port}/" | grep -q "200"; then
-    echo "Error: cli-proxy-api service is not responding at localhost:${port}"
+  if ! is_service_reachable; then
+    echo "Error: BTXL service is not responding at localhost:${port}"
     echo "Please start the container first or use without --with-usage flag."
     exit 1
   fi
@@ -96,12 +110,9 @@ import_stats() {
 }
 
 wait_for_service() {
-  local port
-  port=$(get_port)
-
   echo "Waiting for service to be ready..."
   for i in {1..30}; do
-    if curl -s -o /dev/null -w "%{http_code}" "http://localhost:${port}/" | grep -q "200"; then
+    if is_service_reachable; then
       break
     fi
     sleep 1
@@ -150,7 +161,7 @@ case "$choice" in
     echo "----------------------------------------"
 
     # Build and start the services with a local-only image tag
-    export CLI_PROXY_IMAGE="cli-proxy-api:local"
+    export BTXL_IMAGE="btxl:local"
 
     echo "Building the Docker image..."
     docker compose build \
