@@ -180,7 +180,7 @@ community:
 
 New deployments initialized from the current image enable the community panel by default.
 
-For existing deployments, verify that your current `data/config/config.yaml` includes the `community` section above. If it does not, `/panel/` will return `404` and `/` will continue to show the API root response.
+Runtime defaults also enable the community panel when the `community` block is absent. If your configuration explicitly sets `community.enabled: false` or `community.panel.enabled: false`, `/panel/` will remain unavailable.
 
 ### Security Note
 

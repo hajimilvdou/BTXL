@@ -180,7 +180,7 @@ community:
 
 使用当前镜像初始化的新部署，默认已经启用社区面板。
 
-如果是旧部署，请检查当前正在使用的 `data/config/config.yaml` 是否已经包含上述 `community` 配置；如果没有，`/panel/` 会返回 `404`，根路径 `/` 也会继续显示 API 根响应。
+运行时默认值也会在 `community` 配置段缺失时自动启用社区面板；只有当配置中显式写了 `community.enabled: false` 或 `community.panel.enabled: false` 时，`/panel/` 才会不可用。
 
 ### 安全提示
 

@@ -542,6 +542,39 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 	cfg.Pprof.Enable = false
 	cfg.Pprof.Addr = DefaultPprofAddr
 	cfg.AmpCode.RestrictManagementToLocalhost = false // Default to false: API key auth is sufficient
+
+	// BTXL defaults: enable the community platform and panel unless explicitly disabled in config.
+	// This keeps existing runtime configs that omit the `community` block compatible with the
+	// current product expectation that the web panel is available on the main service port.
+	cfg.Community.Enabled = true
+	cfg.Community.Database.Driver = "sqlite"
+	cfg.Community.Database.DSN = "./config/community.db"
+	cfg.Community.Auth.JWTSecret = "CHANGE-ME-TO-A-SECURE-32-BYTE-SECRET"
+	cfg.Community.Auth.AccessTokenTTL = 7200
+	cfg.Community.Auth.RefreshTokenTTL = 604800
+	cfg.Community.Auth.EmailRegister = false
+	cfg.Community.Auth.InviteRequired = false
+	cfg.Community.Auth.ReferralEnabled = true
+	cfg.Community.Quota.DefaultPoolMode = "public"
+	cfg.Community.Quota.RPM.Enabled = true
+	cfg.Community.Quota.RPM.ContributorRPM = 30
+	cfg.Community.Quota.RPM.NonContributorRPM = 10
+	cfg.Community.Quota.ProbabilityLimit.Enabled = false
+	cfg.Community.Quota.ProbabilityLimit.ContributorWeight = 1.0
+	cfg.Community.Quota.ProbabilityLimit.NonContributorWeight = 0.8
+	cfg.Community.Quota.RiskRule.Enabled = true
+	cfg.Community.Quota.RiskRule.RPMExceedThreshold = 5
+	cfg.Community.Quota.RiskRule.RPMExceedWindowSec = 300
+	cfg.Community.Quota.RiskRule.PenaltyDurationSec = 600
+	cfg.Community.Quota.RiskRule.PenaltyProbability = 0.1
+	cfg.Community.Security.IPControl.Enabled = false
+	cfg.Community.Security.RateLimit.Enabled = true
+	cfg.Community.Security.RateLimit.GlobalQPS = 100
+	cfg.Community.Security.RateLimit.PerIPRPM = 60
+	cfg.Community.Security.AnomalyDetect.Enabled = true
+	cfg.Community.Panel.Enabled = true
+	cfg.Community.Panel.BasePath = "/panel"
+
 	if err = yaml.Unmarshal(data, &cfg); err != nil {
 		if optional {
 			// In cloud deploy mode, if YAML parsing fails, return empty config instead of error.
