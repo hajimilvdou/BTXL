@@ -1,23 +1,29 @@
 services:
   btxl:
+    # ============================================================
+    # BTXL 通用部署编排
+    # ------------------------------------------------------------
+    # 设计目标:
+    # 1. 复制即用: 无需提前手动创建 config.yaml 文件
+    # 2. 面板友好: 避免文件挂载被面板误建成目录
+    # 3. 部署通用: 默认直接拉取 GHCR 镜像运行
+    # ============================================================
     image: ${BTXL_IMAGE:-ghcr.io/hajimilvdou/btxl:latest}
     pull_policy: always
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VERSION: ${VERSION:-dev}
-        COMMIT: ${COMMIT:-none}
-        BUILD_DATE: ${BUILD_DATE:-unknown}
     container_name: btxl
-    # env_file:
-    #   - .env
     environment:
       DEPLOY: ${DEPLOY:-}
+      TZ: ${TZ:-Asia/Shanghai}
     ports:
-      - "8317:8317"
+      - "${BTXL_PORT:-8317}:8317"
     volumes:
-      - ${BTXL_CONFIG_PATH:-./config.yaml}:/opt/btxl/config.yaml
-      - ${BTXL_AUTH_PATH:-./auths}:/root/.btxl
-      - ${BTXL_LOG_PATH:-./logs}:/opt/btxl/logs
+      - ${BTXL_CONFIG_DIR:-./data/config}:/opt/btxl/config
+      - ${BTXL_AUTH_PATH:-./data/auths}:/root/.btxl
+      - ${BTXL_LOG_PATH:-./data/logs}:/opt/btxl/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8317/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     restart: unless-stopped

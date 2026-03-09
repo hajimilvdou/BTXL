@@ -20,13 +20,15 @@ FROM alpine:3.22.0
 
 RUN apk add --no-cache tzdata
 
-RUN mkdir -p /opt/btxl
+RUN mkdir -p /opt/btxl /opt/btxl/config /opt/btxl/logs /root/.btxl
 
 COPY --from=builder ./app/btxl /opt/btxl/btxl
 
 COPY config.example.yaml /opt/btxl/config.example.yaml
 
-RUN cp /opt/btxl/config.example.yaml /opt/btxl/config.yaml
+COPY docker/entrypoint.sh /usr/local/bin/btxl-entrypoint.sh
+
+RUN chmod +x /usr/local/bin/btxl-entrypoint.sh
 
 WORKDIR /opt/btxl
 
@@ -36,4 +38,4 @@ ENV TZ=Asia/Shanghai
 
 RUN cp /usr/share/zoneinfo/${TZ} /etc/localtime && echo "${TZ}" > /etc/timezone
 
-CMD ["./btxl"]
+ENTRYPOINT ["/usr/local/bin/btxl-entrypoint.sh"]

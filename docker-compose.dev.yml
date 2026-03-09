@@ -1,0 +1,16 @@
+services:
+  btxl:
+    # ============================================================
+    # BTXL 开发构建覆盖层
+    # ------------------------------------------------------------
+    # 用法:
+    # docker compose -f docker-compose.yml -f docker-compose.dev.yml build
+    # docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+    # ============================================================
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${COMMIT:-none}
+        BUILD_DATE: ${BUILD_DATE:-unknown}

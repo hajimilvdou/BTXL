@@ -16,7 +16,7 @@ $choice = Read-Host -Prompt "Enter choice [1-2]"
 switch ($choice) {
     "1" {
         Write-Host "--- Running with Pre-built Image ---"
-        docker compose up -d --remove-orphans --no-build
+        docker compose -f docker-compose.yml up -d --remove-orphans --no-build
         Write-Host "Services are starting from remote image."
         Write-Host "Run 'docker compose logs -f' to see the logs."
     }
@@ -38,10 +38,10 @@ switch ($choice) {
         $env:BTXL_IMAGE = "btxl:local"
         
         Write-Host "Building the Docker image..."
-        docker compose build --build-arg VERSION=$VERSION --build-arg COMMIT=$COMMIT --build-arg BUILD_DATE=$BUILD_DATE
+        docker compose -f docker-compose.yml -f docker-compose.dev.yml build --build-arg VERSION=$VERSION --build-arg COMMIT=$COMMIT --build-arg BUILD_DATE=$BUILD_DATE
 
         Write-Host "Starting the services..."
-        docker compose up -d --remove-orphans --pull never
+        docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --remove-orphans --pull never
 
         Write-Host "Build complete. Services are starting."
         Write-Host "Run 'docker compose logs -f' to see the logs."

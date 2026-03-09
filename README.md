@@ -85,20 +85,26 @@ The compose service and container are now both named `btxl`.
 git clone https://github.com/hajimilvdou/BTXL.git
 cd BTXL
 
-cp config.example.yaml config.yaml
-# Edit config.yaml before production use
-
 docker compose up -d
 ```
+
+After the first start, the container auto-initializes:
+
+- `./data/config/config.yaml`
+- `./data/auths/`
+- `./data/logs/`
+
+You can then edit `./data/config/config.yaml` and restart the container.
 
 Current compose behavior:
 
 - Service name: `btxl`
 - Container name: `btxl`
-- Published port: `8317:8317`
-- Mounted config path inside container: `/opt/btxl/config.yaml`
-- Mounted auth directory inside container: `/root/.btxl`
-- Mounted log directory inside container: `/opt/btxl/logs`
+- Published port: `${BTXL_PORT:-8317}:8317`
+- Mounted config directory inside container: `${BTXL_CONFIG_DIR:-./data/config}` -> `/opt/btxl/config`
+- Mounted auth directory inside container: `${BTXL_AUTH_PATH:-./data/auths}` -> `/root/.btxl`
+- Mounted log directory inside container: `${BTXL_LOG_PATH:-./data/logs}` -> `/opt/btxl/logs`
+- Health check: probes `http://127.0.0.1:8317/`
 
 ### Direct Image Deployment
 
@@ -108,7 +114,9 @@ Image:
 ghcr.io/hajimilvdou/btxl:latest
 ```
 
-The image now contains a fallback `/opt/btxl/config.yaml` generated from `config.example.yaml`, so the container can boot more predictably when a platform pulls the image directly.
+The image now uses a resilient entrypoint that supports both file-style and directory-style config mounts. If the config file is missing, it initializes one from `config.example.yaml`.
+
+This specifically avoids the common panel/PaaS error where a missing `config.yaml` host path is auto-created as a directory and Docker then fails to mount it onto a file path.
 
 For real deployment, you should still mount your own config and persistent data:
 
@@ -116,10 +124,17 @@ For real deployment, you should still mount your own config and persistent data:
 docker run -d \
   --name btxl \
   -p 8317:8317 \
-  -v $(pwd)/config.yaml:/opt/btxl/config.yaml \
-  -v $(pwd)/auths:/root/.btxl \
-  -v $(pwd)/logs:/opt/btxl/logs \
+  -v $(pwd)/data/config:/opt/btxl/config \
+  -v $(pwd)/data/auths:/root/.btxl \
+  -v $(pwd)/data/logs:/opt/btxl/logs \
   ghcr.io/hajimilvdou/btxl:latest
+```
+
+Before first start:
+
+```bash
+mkdir -p data/config data/auths data/logs
+cp config.example.yaml data/config/config.yaml
 ```
 
 ### Docker Environment Variables
@@ -127,9 +142,15 @@ docker run -d \
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `BTXL_IMAGE` | `ghcr.io/hajimilvdou/btxl:latest` | Image tag used by `docker compose` |
-| `BTXL_CONFIG_PATH` | `./config.yaml` | Host-side config file mounted into container |
-| `BTXL_AUTH_PATH` | `./auths` | Host-side auth directory mounted to `/root/.btxl` |
-| `BTXL_LOG_PATH` | `./logs` | Host-side log directory mounted into container |
+| `BTXL_PORT` | `8317` | Host-side published port |
+| `BTXL_CONFIG_DIR` | `./data/config` | Host-side config directory mounted into container |
+| `BTXL_AUTH_PATH` | `./data/auths` | Host-side auth directory mounted to `/root/.btxl` |
+| `BTXL_LOG_PATH` | `./data/logs` | Host-side log directory mounted into container |
+
+Copy-paste note:
+
+- The main `docker-compose.yml` is now deployment-oriented and copy-ready
+- Local source builds use `docker-compose.dev.yml` as an override file
 
 ## Configuration Notes
 
@@ -218,9 +239,21 @@ test/                    integration / regression tests
 Check the following in order:
 
 1. Confirm the platform publishes `8317`.
-2. Confirm the process is using a valid `config.yaml`.
+2. Confirm the process is using a valid `config/config.yaml`.
 3. Confirm the service is not waiting for cloud-deploy configuration.
 4. Confirm your mounted config has a valid `port` and no YAML syntax errors.
+
+### Docker says `not a directory` while mounting `config.yaml`
+
+This usually means your panel created the host path as a directory, but the container expected a file.
+
+BTXL now fixes this by switching the recommended mount to a directory:
+
+- Host: `./data/config`
+- Container: `/opt/btxl/config`
+- Actual config file: `/opt/btxl/config/config.yaml`
+
+If your panel already created a host directory named `config.yaml`, upgrading to the new image should still work because the entrypoint can detect that case and will use `config.yaml/config.yaml` inside it.
 
 ### Server deployment cannot complete provider OAuth from the web panel
 

@@ -17,7 +17,13 @@ SECRET_FILE="${STATS_DIR}/.api_secret"
 WITH_USAGE=false
 
 get_port() {
-  local config_path="${BTXL_CONFIG_PATH:-./config.yaml}"
+  local config_dir="${BTXL_CONFIG_DIR:-./data/config}"
+  local legacy_config_path="${BTXL_CONFIG_PATH:-}"
+  local config_path="${config_dir}/config.yaml"
+
+  if [[ -n "${legacy_config_path}" ]]; then
+    config_path="${legacy_config_path}"
+  fi
 
   if [[ -f "${config_path}" ]]; then
     grep -E "^port:" "${config_path}" | sed -E 's/^port: *["'"'"']?([0-9]+)["'"'"']?.*$/\1/'
@@ -138,7 +144,7 @@ case "$choice" in
     if [[ "${WITH_USAGE}" == "true" ]]; then
       export_stats
     fi
-    docker compose up -d --remove-orphans --no-build
+    docker compose -f docker-compose.yml up -d --remove-orphans --no-build
     if [[ "${WITH_USAGE}" == "true" ]]; then
       wait_for_service
       import_stats
@@ -164,7 +170,7 @@ case "$choice" in
     export BTXL_IMAGE="btxl:local"
 
     echo "Building the Docker image..."
-    docker compose build \
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml build \
       --build-arg VERSION="${VERSION}" \
       --build-arg COMMIT="${COMMIT}" \
       --build-arg BUILD_DATE="${BUILD_DATE}"
@@ -174,7 +180,7 @@ case "$choice" in
     fi
 
     echo "Starting the services..."
-    docker compose up -d --remove-orphans --pull never
+    docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --remove-orphans --pull never
 
     if [[ "${WITH_USAGE}" == "true" ]]; then
       wait_for_service
