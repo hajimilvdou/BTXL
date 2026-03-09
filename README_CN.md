@@ -152,6 +152,8 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml build
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
+当前 Docker 构建流程会在镜像构建阶段同时编译面板前端。因此，只有重新构建镜像后，新的面板页面才会真正进入容器。
+
 ## 配置说明
 
 ### `config.example.yaml`

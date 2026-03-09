@@ -152,6 +152,8 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml build
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
+The Docker build now compiles the panel frontend during image creation. Rebuilding the image is required for panel UI changes to appear in the running container.
+
 ## Configuration
 
 ### `config.example.yaml`

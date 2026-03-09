@@ -1,3 +1,16 @@
+FROM node:22-alpine AS panel-builder
+
+WORKDIR /panel
+
+COPY internal/panel/web/package.json ./package.json
+COPY internal/panel/web/tsconfig.json ./tsconfig.json
+COPY internal/panel/web/vite.config.ts ./vite.config.ts
+COPY internal/panel/web/index.html ./index.html
+COPY internal/panel/web/src ./src
+
+RUN npm install --no-fund --no-audit
+RUN npm run build
+
 FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
@@ -7,6 +20,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+
+COPY --from=panel-builder /panel/dist ./internal/panel/web/dist
 
 RUN apk add --no-cache git && go mod tidy -v 2>&1
 

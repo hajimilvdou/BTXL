@@ -4,6 +4,7 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,6 +23,7 @@ func RegisterRoutes(engine *gin.Engine, basePath string) {
 	if basePath == "" {
 		basePath = "/panel"
 	}
+	basePath = "/" + strings.Trim(strings.TrimSpace(basePath), "/")
 
 	sub, err := fs.Sub(distFS, "web/dist")
 	if err != nil {
@@ -29,14 +31,27 @@ func RegisterRoutes(engine *gin.Engine, basePath string) {
 		return
 	}
 	fileServer := http.FileServer(http.FS(sub))
+	serveIndex := func(c *gin.Context) {
+		c.FileFromFS("/index.html", http.FS(sub))
+	}
+
+	engine.GET(basePath, func(c *gin.Context) {
+		c.Redirect(http.StatusFound, basePath+"/")
+	})
+
+	engine.GET(basePath+"/", serveIndex)
 
 	engine.GET(basePath+"/*filepath", func(c *gin.Context) {
 		path := c.Param("filepath")
+		if path == "" || path == "/" {
+			serveIndex(c)
+			return
+		}
 
 		// SPA 回退: 非静态资源请求返回 index.html
 		f, err := sub.Open(path[1:]) // 去掉前导 /
 		if err != nil {
-			c.FileFromFS("/index.html", http.FS(sub))
+			serveIndex(c)
 			return
 		}
 		f.Close()
