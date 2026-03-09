@@ -346,6 +346,19 @@ func (s *Server) setupRoutes() {
 
 	// Root endpoint
 	s.engine.GET("/", func(c *gin.Context) {
+		if s.cfg != nil && s.cfg.Community.Enabled && s.cfg.Community.Panel.Enabled {
+			accept := strings.ToLower(c.GetHeader("Accept"))
+			if strings.Contains(accept, "text/html") || strings.Contains(accept, "application/xhtml+xml") {
+				basePath := strings.TrimSpace(s.cfg.Community.Panel.BasePath)
+				if basePath == "" {
+					basePath = "/panel"
+				}
+				basePath = strings.TrimRight(basePath, "/") + "/"
+				c.Redirect(http.StatusFound, basePath)
+				return
+			}
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"message": "CLI Proxy API Server",
 			"endpoints": []string{
