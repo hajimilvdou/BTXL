@@ -142,6 +142,24 @@ func (s *Service) ResetAPIKey(ctx context.Context, userID int64) (string, error)
 	return newKey, nil
 }
 
+// ChangePassword 修改用户密码。
+func (s *Service) ChangePassword(ctx context.Context, userID int64, currentPassword, newPassword string) error {
+	user, err := s.store.GetUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword)); err != nil {
+		return fmt.Errorf("当前密码错误")
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("密码哈希失败: %w", err)
+	}
+	user.PasswordHash = string(hash)
+	user.UpdatedAt = time.Now()
+	return s.store.UpdateUser(ctx, user)
+}
+
 // BanUser 封禁用户
 func (s *Service) BanUser(ctx context.Context, userID int64) error {
 	user, err := s.store.GetUserByID(ctx, userID)

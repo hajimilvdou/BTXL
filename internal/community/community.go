@@ -169,7 +169,7 @@ func (c *Community) RegisterRoutes(engine *gin.Engine) {
 	authed.Use(user.JWTMiddleware(c.jwtMgr))
 
 	// 用户路由（不需要额度中间件）
-	userHandler := user.NewUserHandler(c.userSvc)
+	userHandler := user.NewUserHandler(c.userSvc, c.store, c.store)
 	userHandler.RegisterRoutes(authed)
 
 	// 凭证路由（用户端）

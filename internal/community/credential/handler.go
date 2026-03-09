@@ -40,6 +40,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	cred := rg.Group("/credential")
 	cred.POST("/redeem", h.Redeem)
 	cred.GET("/templates", h.ListTemplates)
+	cred.GET("/referral", h.GetReferral)
 	cred.POST("/claim-template", h.ClaimTemplate)
 }
 
@@ -113,6 +114,29 @@ func (h *Handler) ClaimTemplate(c *gin.Context) {
 		"code":    code,
 		"message": "领取成功",
 	})
+}
+
+// GetReferral 返回当前用户的推荐统计。
+func (h *Handler) GetReferral(c *gin.Context) {
+	if h.referralSvc == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"referral": gin.H{
+				"total_invitees":     0,
+				"total_bonus_reqs":   0,
+				"total_bonus_tokens": 0,
+			},
+		})
+		return
+	}
+
+	userID := c.GetInt64("userID")
+	stats, err := h.referralSvc.GetReferralStats(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询推荐统计失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"referral": stats})
 }
 
 // ============================================================

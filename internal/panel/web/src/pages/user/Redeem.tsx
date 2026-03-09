@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useAuthStore } from '../../stores/auth'
 import { useUserStore, type RedemptionTemplate } from '../../stores/user'
 import { redeemCode, claimTemplate } from '../../api/user'
 import { useI18n } from '../../i18n'
@@ -10,10 +11,12 @@ import { useI18n } from '../../i18n'
 export default function Redeem() {
   const { t, language } = useI18n()
   const isZh = language === 'zh'
+  const user = useAuthStore((s) => s.user)
   const {
-    templates, referral, loading,
+    templates, referral, templatesLoading, referralLoading,
     fetchTemplates, fetchReferral,
   } = useUserStore()
+  const loading = templatesLoading || referralLoading
 
   // --------------------------------------------------------
   // 初始加载
@@ -77,9 +80,9 @@ export default function Redeem() {
   const [refCopied, setRefCopied] = useState(false)
 
   const handleCopyReferral = async () => {
-    if (!referral?.code) return
+    if (!user?.invite_code) return
     try {
-      await navigator.clipboard.writeText(referral.code)
+      await navigator.clipboard.writeText(user.invite_code)
       setRefCopied(true)
       setTimeout(() => setRefCopied(false), 2000)
     } catch { /* 静默降级 */ }
@@ -148,7 +151,7 @@ export default function Redeem() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {templates.map((tmpl) => (
+              {templates.map((tmpl: RedemptionTemplate) => (
                 <div
                   key={tmpl.id}
                   className="flex flex-col rounded-xl border border-gray-100 p-5 transition hover:shadow-sm"
@@ -205,7 +208,7 @@ export default function Redeem() {
         </div>
 
         {/* ---- 我的推荐 ---- */}
-        {referral && (
+        {(referral || user?.invite_code) && (
           <div className="rounded-xl bg-white p-6 shadow-sm">
             <h2 className="mb-4 text-sm font-semibold text-gray-500 uppercase tracking-wide">
               {isZh ? '我的推荐' : 'My Referrals'}
@@ -216,7 +219,7 @@ export default function Redeem() {
                 <p className="text-xs text-gray-500">{isZh ? '推荐码' : 'Referral Code'}</p>
                 <div className="mt-2 flex items-center gap-2">
                   <code className="flex-1 truncate font-mono text-sm font-medium text-gray-900">
-                    {referral.code}
+                    {user?.invite_code ?? '-'}
                   </code>
                   <button
                     type="button"
@@ -232,7 +235,7 @@ export default function Redeem() {
               <div className="rounded-lg border border-gray-100 p-4">
                 <p className="text-xs text-gray-500">{isZh ? '已推荐人数' : 'Total Referrals'}</p>
                 <p className="mt-2 text-xl font-bold text-gray-900">
-                  {referral.totalReferrals}
+                  {referral?.totalInvitees ?? 0}
                 </p>
               </div>
 
@@ -240,7 +243,14 @@ export default function Redeem() {
               <div className="rounded-lg border border-gray-100 p-4">
                 <p className="text-xs text-gray-500">{isZh ? '获得奖励' : 'Rewards Earned'}</p>
                 <p className="mt-2 text-xl font-bold text-[#10B981]">
-                  {referral.totalRewards}
+                  {referral?.totalBonusReqs ?? 0}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-gray-100 p-4">
+                <p className="text-xs text-gray-500">{isZh ? '奖励 Token' : 'Bonus Tokens'}</p>
+                <p className="mt-2 text-xl font-bold text-[#3B82F6]">
+                  {referral?.totalBonusTokens ?? 0}
                 </p>
               </div>
             </div>

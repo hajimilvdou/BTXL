@@ -35,7 +35,7 @@ const HEALTH_STYLES: Record<Credential['health'], { dot: string; badge: string }
 export default function Credentials() {
   const { t, language } = useI18n()
   const isZh = language === 'zh'
-  const { credentials, fetchCredentials, loading } = useUserStore()
+  const { credentials, fetchCredentials, credentialsLoading } = useUserStore()
 
   // --------------------------------------------------------
   // 上传表单状态
@@ -229,7 +229,7 @@ export default function Credentials() {
             {isZh ? '我的凭证' : 'My Credentials'}
           </h2>
 
-          {loading ? (
+          {credentialsLoading ? (
             <div className="py-10 text-center text-sm text-gray-400">{t('common.loading')}</div>
           ) : credentials.length === 0 ? (
             <div className="py-10 text-center text-sm text-gray-400">{t('common.noData')}</div>

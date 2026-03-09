@@ -56,7 +56,8 @@ export interface CredentialItem {
 
 export interface UploadCredentialData {
   provider: string
-  api_key: string
+  api_key?: string
+  apiKey?: string
   endpoint?: string
   notes?: string
 }
@@ -72,9 +73,9 @@ export interface RedemptionTemplate {
 }
 
 export interface ReferralInfo {
-  code: string
-  total_referrals: number
-  total_rewards: number
+  total_invitees: number
+  total_bonus_reqs: number
+  total_bonus_tokens: number
 }
 
 /* ----------------------------------------------------------
@@ -109,12 +110,12 @@ export function getQuota(): Promise<ApiResponse<QuotaInfo>> {
 
 /** GET /api/v1/user/stats */
 export function getStats(): Promise<ApiResponse<UserStats>> {
-  return get<UserStats>('/user/stats')
+  return get<UserStats>('/stats/me')
 }
 
 /** GET /api/v1/user/stats/recent */
 export function getRecentStats(): Promise<ApiResponse<{ stats: UsageRecord[] }>> {
-  return get<{ stats: UsageRecord[] }>('/user/stats/recent')
+  return get<{ stats: UsageRecord[] }>('/stats/me')
 }
 
 /* ----------------------------------------------------------
@@ -130,7 +131,12 @@ export function getCredentials(): Promise<ApiResponse<{ credentials: CredentialI
 export function uploadCredential(
   data: UploadCredentialData,
 ): Promise<ApiResponse<{ message: string; credential: CredentialItem }>> {
-  return post<{ message: string; credential: CredentialItem }>('/user/credentials', data)
+  return post<{ message: string; credential: CredentialItem }>('/user/credentials', {
+    provider: data.provider,
+    api_key: data.api_key ?? data.apiKey ?? '',
+    endpoint: data.endpoint,
+    notes: data.notes,
+  })
 }
 
 /** DELETE /api/v1/user/credentials/:id */
@@ -148,24 +154,26 @@ export function deleteCredential(
 export function redeemCode(
   code: string,
 ): Promise<ApiResponse<{ message: string }>> {
-  return post<{ message: string }>('/user/redeem', { code })
+  return post<{ message: string }>('/credential/redeem', { code })
 }
 
 /** GET /api/v1/user/redemption/templates */
 export function getRedemptionTemplates(): Promise<ApiResponse<{ templates: RedemptionTemplate[] }>> {
-  return get<{ templates: RedemptionTemplate[] }>('/user/redemption/templates')
+  return get<{ templates: RedemptionTemplate[] }>('/credential/templates')
 }
 
 /** POST /api/v1/user/redemption/templates/:id/claim */
 export function claimTemplate(
   templateId: string,
 ): Promise<ApiResponse<{ message: string }>> {
-  return post<{ message: string }>(`/user/redemption/templates/${templateId}/claim`)
+  return post<{ message: string }>('/credential/claim-template', {
+    template_id: Number(templateId),
+  })
 }
 
 /** GET /api/v1/user/referral */
 export function getReferralInfo(): Promise<ApiResponse<{ referral: ReferralInfo }>> {
-  return get<{ referral: ReferralInfo }>('/user/referral')
+  return get<{ referral: ReferralInfo }>('/credential/referral')
 }
 
 /* ----------------------------------------------------------

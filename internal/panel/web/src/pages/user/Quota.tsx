@@ -45,7 +45,7 @@ export default function Quota() {
   const { t, language } = useI18n()
   const isZh = language === 'zh'
   const user = useAuthStore((s) => s.user)
-  const { quotas, fetchQuotas, loading } = useUserStore()
+  const { quotas, fetchQuotas, quotaLoading } = useUserStore()
 
   useEffect(() => {
     fetchQuotas()
@@ -66,15 +66,16 @@ export default function Quota() {
   // 池模式标签
   // --------------------------------------------------------
   const poolMode = useMemo(() => {
-    if (!user?.poolMode) return '-'
-    const key = user.poolMode
+    if (!user?.pool_mode) return '-'
+    const key = user.pool_mode
     const map: Record<string, { label: string; color: string }> = {
       private: { label: isZh ? '独立池' : 'Private', color: 'bg-blue-100 text-blue-700' },
       public: { label: isZh ? '公共池' : 'Public', color: 'bg-green-100 text-green-700' },
       contributor: { label: isZh ? '贡献者池' : 'Contributor', color: 'bg-amber-100 text-amber-700' },
+      hybrid: { label: isZh ? '混合池' : 'Hybrid', color: 'bg-purple-100 text-purple-700' },
     }
     return map[key] ?? { label: key, color: 'bg-gray-100 text-gray-700' }
-  }, [user?.poolMode, isZh])
+  }, [user?.pool_mode, isZh])
 
   // --------------------------------------------------------
   // 渲染
@@ -108,7 +109,7 @@ export default function Quota() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
+                {quotaLoading ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-10 text-center text-gray-400">
                       {t('common.loading')}
@@ -121,7 +122,7 @@ export default function Quota() {
                     </td>
                   </tr>
                 ) : (
-                  quotas.map((q, idx) => {
+                  quotas.map((q: QuotaItem, idx: number) => {
                     const used = q.quotaType === 'token' ? q.usedTokens : q.usedRequests
                     const limit = q.quotaType === 'token'
                       ? q.maxTokens + q.bonusTokens
