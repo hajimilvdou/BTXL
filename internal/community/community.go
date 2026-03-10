@@ -70,6 +70,11 @@ func New(ctx context.Context, cfg config.CommunityConfig) (*Community, error) {
 	// ---- 2. 用户子系统 ----
 	userSvc := user.NewService(store)
 
+	// 确保默认管理员账户存在
+	if err := ensureAdminUser(ctx, userSvc, store); err != nil {
+		log.Warnf("确保管理员账户失败: %v", err)
+	}
+
 	accessTTL := time.Duration(cfg.Auth.AccessTokenTTL) * time.Second
 	if accessTTL == 0 {
 		accessTTL = 2 * time.Hour
@@ -200,6 +205,50 @@ func (c *Community) Close() error {
 	if c.store != nil {
 		return c.store.Close()
 	}
+	return nil
+}
+
+// ============================================================
+// 默认管理员账户
+// ============================================================
+
+const (
+	defaultAdminUsername = "admin"
+	defaultAdminPassword = "admin114514"
+)
+
+// ensureAdminUser 确保默认管理员账户存在
+// 如果管理员账户不存在，则创建一个
+func ensureAdminUser(ctx context.Context, userSvc *user.Service, store db.Store) error {
+	// 检查是否已存在管理员用户
+	existingAdmin, err := store.GetUserByUsername(ctx, defaultAdminUsername)
+	if err == nil && existingAdmin != nil {
+		// 管理员已存在
+		return nil
+	}
+
+	// 创建默认管理员账户
+	_, err = userSvc.Register(ctx, user.RegisterInput{
+		Username: defaultAdminUsername,
+		Password: defaultAdminPassword,
+		Email:    "", // 可选，留空
+	})
+	if err != nil {
+		return fmt.Errorf("创建默认管理员失败: %w", err)
+	}
+
+	// 将用户角色提升为管理员
+	adminUser, err := store.GetUserByUsername(ctx, defaultAdminUsername)
+	if err != nil {
+		return fmt.Errorf("查询新创建的管理员失败: %w", err)
+	}
+
+	adminUser.Role = db.RoleAdmin
+	if err := store.UpdateUser(ctx, adminUser); err != nil {
+		return fmt.Errorf("提升管理员权限失败: %w", err)
+	}
+
+	log.Info("默认管理员账户已创建 (用户名: admin)")
 	return nil
 }
 
