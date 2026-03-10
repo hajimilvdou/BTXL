@@ -72,7 +72,6 @@ export default function Quota() {
       private: { label: isZh ? '独立池' : 'Private', color: 'bg-blue-100 text-blue-700' },
       public: { label: isZh ? '公共池' : 'Public', color: 'bg-green-100 text-green-700' },
       contributor: { label: isZh ? '贡献者池' : 'Contributor', color: 'bg-amber-100 text-amber-700' },
-      hybrid: { label: isZh ? '混合池' : 'Hybrid', color: 'bg-purple-100 text-purple-700' },
     }
     return map[key] ?? { label: key, color: 'bg-gray-100 text-gray-700' }
   }, [user?.pool_mode, isZh])

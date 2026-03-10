@@ -345,6 +345,7 @@ community:
     dsn: "./config/community.db"
   auth:
     jwt-secret: "CHANGE-ME-TO-A-SECURE-32-BYTE-SECRET"
+    credential-secret: "CHANGE-ME-TO-A-SEPARATE-CREDENTIAL-SECRET"
     access-token-ttl: 7200
     refresh-token-ttl: 604800
     email-register: false

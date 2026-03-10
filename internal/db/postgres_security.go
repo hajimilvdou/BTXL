@@ -205,6 +205,15 @@ func (s *PostgresStore) ListRiskMarks(ctx context.Context, opts ListRiskMarksOpt
 	return marks, total, nil
 }
 
+// DeleteRiskMark 根据 ID 删除风险标记。
+func (s *PostgresStore) DeleteRiskMark(ctx context.Context, id int64) error {
+	const query = `DELETE FROM user_risk_marks WHERE id = $1`
+	if _, err := s.db.ExecContext(ctx, query, id); err != nil {
+		return fmt.Errorf("删除风险标记失败: %w", err)
+	}
+	return nil
+}
+
 // ExpireRiskMarks 清理已过期的风险标记
 // 使用 NOW() 替代 CURRENT_TIMESTAMP（PG 中等效）
 func (s *PostgresStore) ExpireRiskMarks(ctx context.Context) (int64, error) {

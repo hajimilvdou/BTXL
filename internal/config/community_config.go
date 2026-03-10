@@ -24,6 +24,7 @@ type DatabaseConfig struct {
 // AuthConfig 认证配置
 type AuthConfig struct {
 	JWTSecret           string          `yaml:"jwt-secret,omitempty" json:"jwt_secret,omitempty"`
+	CredentialSecret    string          `yaml:"credential-secret,omitempty" json:"credential_secret,omitempty"`
 	AccessTokenTTL      int             `yaml:"access-token-ttl,omitempty" json:"access_token_ttl,omitempty"`   // 秒，默认 7200
 	RefreshTokenTTL     int             `yaml:"refresh-token-ttl,omitempty" json:"refresh_token_ttl,omitempty"` // 秒，默认 604800
 	EmailRegister       bool            `yaml:"email-register,omitempty" json:"email_register,omitempty"`

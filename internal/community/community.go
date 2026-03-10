@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	communityadmin "github.com/router-for-me/CLIProxyAPI/v6/internal/community/admin"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/community/credential"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/community/quota"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/community/security"
@@ -64,6 +65,7 @@ func New(ctx context.Context, cfg config.CommunityConfig) (*Community, error) {
 		return nil, fmt.Errorf("社区数据库迁移失败: %w", err)
 	}
 	log.Info("社区平台数据库初始化完成")
+	db.ConfigureCredentialProtection(cfg.Auth.CredentialSecret, cfg.Auth.JWTSecret)
 
 	// ---- 2. 用户子系统 ----
 	userSvc := user.NewService(store)
@@ -189,6 +191,8 @@ func (c *Community) RegisterRoutes(engine *gin.Engine) {
 
 	// 凭证路由（管理端，需 Admin 权限）
 	credHandler.RegisterAdminRoutes(admin)
+	adminHandler := communityadmin.NewHandler(c.store, c.userSvc, c.secStack, c.statsAggregator, c.statsExporter, c.redemptionSvc, c.templateSvc)
+	adminHandler.RegisterRoutes(admin)
 }
 
 // Close 清理资源

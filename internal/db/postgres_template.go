@@ -71,6 +71,40 @@ func (s *PostgresStore) ListTemplates(ctx context.Context) ([]*RedemptionTemplat
 	return list, rows.Err()
 }
 
+// ListAllTemplates 列出全部模板，包括已禁用模板。
+func (s *PostgresStore) ListAllTemplates(ctx context.Context) ([]*RedemptionTemplate, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, name, description, bonus_quota, max_per_user,
+		        total_limit, issued_count, enabled, created_at
+		 FROM redemption_templates
+		 ORDER BY created_at DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("查询全部模板失败: %w", err)
+	}
+	defer rows.Close()
+
+	var list []*RedemptionTemplate
+	for rows.Next() {
+		tpl, err := pgScanTemplate(rows)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, tpl)
+	}
+	return list, rows.Err()
+}
+
+// UpdateTemplateEnabled 更新模板启用状态。
+func (s *PostgresStore) UpdateTemplateEnabled(ctx context.Context, id int64, enabled bool) error {
+	if _, err := s.db.ExecContext(ctx,
+		`UPDATE redemption_templates SET enabled = $1 WHERE id = $2`,
+		enabled, id,
+	); err != nil {
+		return fmt.Errorf("更新模板状态失败: %w", err)
+	}
+	return nil
+}
+
 // IncrementTemplateIssuedCount 原子递增模板已发放数
 // WHERE 条件同时检查 issued_count < total_limit，防止 TOCTOU 竞态
 func (s *PostgresStore) IncrementTemplateIssuedCount(ctx context.Context, id int64) error {

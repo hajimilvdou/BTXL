@@ -74,6 +74,44 @@ func (s *SQLiteStore) ListTemplates(ctx context.Context) ([]*RedemptionTemplate,
 	return list, rows.Err()
 }
 
+// ListAllTemplates 列出全部模板，包括已禁用模板。
+func (s *SQLiteStore) ListAllTemplates(ctx context.Context) ([]*RedemptionTemplate, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, name, description, bonus_quota, max_per_user,
+		        total_limit, issued_count, enabled, created_at
+		 FROM redemption_templates
+		 ORDER BY created_at DESC`)
+	if err != nil {
+		return nil, fmt.Errorf("查询全部模板失败: %w", err)
+	}
+	defer rows.Close()
+
+	var list []*RedemptionTemplate
+	for rows.Next() {
+		tpl, err := scanTemplate(rows)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, tpl)
+	}
+	return list, rows.Err()
+}
+
+// UpdateTemplateEnabled 更新模板启用状态。
+func (s *SQLiteStore) UpdateTemplateEnabled(ctx context.Context, id int64, enabled bool) error {
+	enabledInt := 0
+	if enabled {
+		enabledInt = 1
+	}
+	if _, err := s.db.ExecContext(ctx,
+		`UPDATE redemption_templates SET enabled = ? WHERE id = ?`,
+		enabledInt, id,
+	); err != nil {
+		return fmt.Errorf("更新模板状态失败: %w", err)
+	}
+	return nil
+}
+
 // IncrementTemplateIssuedCount 原子递增模板已发放数
 // WHERE 条件同时检查 issued_count < total_limit，防止 TOCTOU 竞态
 func (s *SQLiteStore) IncrementTemplateIssuedCount(ctx context.Context, id int64) error {

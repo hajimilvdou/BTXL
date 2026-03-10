@@ -58,7 +58,6 @@ const POOL_LABELS: Record<string, string> = {
   public:      '公共池',
   private:     '私有池',
   contributor: '贡献者',
-  hybrid:      '混合',
 };
 
 /* ---- 日期格式化 ---- */

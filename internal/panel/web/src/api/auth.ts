@@ -18,7 +18,7 @@ export interface User {
   status: 'active' | 'banned'
   api_key: string
   invite_code: string
-  pool_mode: 'public' | 'private' | 'hybrid'
+  pool_mode: 'public' | 'private' | 'contributor'
   oauth_provider: string
   created_at: string
   updated_at: string

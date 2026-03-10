@@ -124,6 +124,7 @@ type SecurityStore interface {
 	CreateRiskMark(ctx context.Context, mark *UserRiskMark) error
 	GetActiveRiskMarks(ctx context.Context, userID int64) ([]*UserRiskMark, error)
 	ListRiskMarks(ctx context.Context, opts ListRiskMarksOpts) ([]*UserRiskMark, int64, error)
+	DeleteRiskMark(ctx context.Context, id int64) error
 	ExpireRiskMarks(ctx context.Context) (int64, error)
 
 	RecordAnomalyEvent(ctx context.Context, event *AnomalyEvent) error
@@ -163,6 +164,8 @@ type TemplateStore interface {
 	CreateTemplate(ctx context.Context, tpl *RedemptionTemplate) error
 	GetTemplateByID(ctx context.Context, id int64) (*RedemptionTemplate, error)
 	ListTemplates(ctx context.Context) ([]*RedemptionTemplate, error)
+	ListAllTemplates(ctx context.Context) ([]*RedemptionTemplate, error)
+	UpdateTemplateEnabled(ctx context.Context, id int64, enabled bool) error
 	IncrementTemplateIssuedCount(ctx context.Context, id int64) error
 	DecrementTemplateIssuedCount(ctx context.Context, id int64) error
 	CountTemplateClaimsByUser(ctx context.Context, userID, templateID int64) (int, error)

@@ -125,7 +125,7 @@ export interface OAuthProvider {
 export type RoutingStrategy = 'WeightedRoundRobin' | 'LeastLoad' | 'FillFirst' | 'Random'
 
 export interface CredentialMetrics {
-  credential_id: number
+  credential_id: string
   provider: string
   total_requests: number
   success_rate: number
@@ -415,7 +415,7 @@ export function updateRouterStrategy(strategy: RoutingStrategy): Promise<ApiResp
 }
 
 export function updateCredentialWeight(
-  credentialId: number,
+  credentialId: string,
   weight: number,
 ): Promise<ApiResponse<void>> {
   return put<void>(`/admin/router/credentials/${credentialId}/weight`, { weight })

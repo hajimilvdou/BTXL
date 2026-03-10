@@ -26,16 +26,21 @@ func (s *PostgresStore) CreateCredential(ctx context.Context, cred *Credential) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
 	`
 
+	encryptedData, err := maybeEncryptCredentialData(cred.Data)
+	if err != nil {
+		return fmt.Errorf("encrypt credential [%s]: %w", cred.ID, err)
+	}
+
 	var ownerID any
 	if cred.OwnerID != nil {
 		ownerID = *cred.OwnerID
 	}
 
-	_, err := s.db.ExecContext(ctx, query,
+	_, err = s.db.ExecContext(ctx, query,
 		cred.ID,
 		cred.Provider,
 		ownerID,
-		cred.Data,
+		encryptedData,
 		cred.Health,
 		cred.Weight,
 		cred.Enabled,
@@ -135,15 +140,20 @@ func (s *PostgresStore) UpdateCredential(ctx context.Context, cred *Credential) 
 		WHERE id = $7
 	`
 
+	encryptedData, err := maybeEncryptCredentialData(cred.Data)
+	if err != nil {
+		return fmt.Errorf("encrypt credential [%s]: %w", cred.ID, err)
+	}
+
 	var ownerID any
 	if cred.OwnerID != nil {
 		ownerID = *cred.OwnerID
 	}
 
-	_, err := s.db.ExecContext(ctx, query,
+	_, err = s.db.ExecContext(ctx, query,
 		cred.Provider,
 		ownerID,
-		cred.Data,
+		encryptedData,
 		cred.Health,
 		cred.Weight,
 		cred.Enabled,

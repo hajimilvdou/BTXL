@@ -239,6 +239,15 @@ func (s *SQLiteStore) ListRiskMarks(ctx context.Context, opts ListRiskMarksOpts)
 	return marks, total, nil
 }
 
+// DeleteRiskMark 根据 ID 删除风险标记。
+func (s *SQLiteStore) DeleteRiskMark(ctx context.Context, id int64) error {
+	const query = `DELETE FROM user_risk_marks WHERE id = ?`
+	if _, err := s.db.ExecContext(ctx, query, id); err != nil {
+		return fmt.Errorf("删除风险标记失败: %w", err)
+	}
+	return nil
+}
+
 // ------------------------------------------------------------
 // ExpireRiskMarks 清理已过期的风险标记
 // 删除 expires_at 早于或等于当前时间的记录
