@@ -34,15 +34,8 @@ func RegisterRoutes(engine *gin.Engine, basePath string) {
 	serveIndex := func(c *gin.Context) {
 		c.FileFromFS("/index.html", http.FS(sub))
 	}
-
-	engine.GET(basePath, func(c *gin.Context) {
-		c.Redirect(http.StatusFound, basePath+"/")
-	})
-
-	panelGroup := engine.Group(basePath)
-	panelGroup.GET("/", serveIndex)
-	panelGroup.GET("/:filepath", func(c *gin.Context) {
-		path := c.Param("filepath")
+	servePath := func(c *gin.Context, path string) {
+		path = strings.Trim(strings.TrimSpace(path), "/")
 		if path == "" {
 			serveIndex(c)
 			return
@@ -58,30 +51,32 @@ func RegisterRoutes(engine *gin.Engine, basePath string) {
 
 		c.Request.URL.Path = "/" + path
 		fileServer.ServeHTTP(c.Writer, c.Request)
+	}
+
+	engine.GET(basePath, func(c *gin.Context) {
+		c.Redirect(http.StatusFound, basePath+"/")
 	})
 
-	panelGroup.GET("/:dir/*filepath", func(c *gin.Context) {
-		dir := c.Param("dir")
-		filepath := strings.TrimPrefix(c.Param("filepath"), "/")
-		if dir == "" {
-			serveIndex(c)
+	engine.GET(basePath+"/", serveIndex)
+	engine.GET(basePath+"/assets/*filepath", func(c *gin.Context) {
+		servePath(c, "assets/"+c.Param("filepath"))
+	})
+	engine.GET(basePath+"/favicon.ico", func(c *gin.Context) {
+		servePath(c, "favicon.ico")
+	})
+	engine.GET(basePath+"/vite.svg", func(c *gin.Context) {
+		servePath(c, "vite.svg")
+	})
+	engine.NoRoute(func(c *gin.Context) {
+		if c.Request.Method != http.MethodGet {
+			c.Next()
 			return
 		}
-
-		path := dir
-		if filepath != "" {
-			path += "/" + filepath
-		}
-
-		// SPA 回退: 非静态资源请求返回 index.html
-		f, err := sub.Open(path)
-		if err != nil {
+		if c.Request.URL.Path == basePath || strings.HasPrefix(c.Request.URL.Path, basePath+"/") {
 			serveIndex(c)
+			c.Abort()
 			return
 		}
-		f.Close()
-
-		c.Request.URL.Path = "/" + path
-		fileServer.ServeHTTP(c.Writer, c.Request)
+		c.Next()
 	})
 }
