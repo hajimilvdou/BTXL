@@ -39,24 +39,49 @@ func RegisterRoutes(engine *gin.Engine, basePath string) {
 		c.Redirect(http.StatusFound, basePath+"/")
 	})
 
-	engine.GET(basePath+"/", serveIndex)
-
-	engine.GET(basePath+"/*filepath", func(c *gin.Context) {
+	panelGroup := engine.Group(basePath)
+	panelGroup.GET("/", serveIndex)
+	panelGroup.GET("/:filepath", func(c *gin.Context) {
 		path := c.Param("filepath")
-		if path == "" || path == "/" {
+		if path == "" {
 			serveIndex(c)
 			return
 		}
 
 		// SPA 回退: 非静态资源请求返回 index.html
-		f, err := sub.Open(path[1:]) // 去掉前导 /
+		f, err := sub.Open(path)
 		if err != nil {
 			serveIndex(c)
 			return
 		}
 		f.Close()
 
-		c.Request.URL.Path = path
+		c.Request.URL.Path = "/" + path
+		fileServer.ServeHTTP(c.Writer, c.Request)
+	})
+
+	panelGroup.GET("/:dir/*filepath", func(c *gin.Context) {
+		dir := c.Param("dir")
+		filepath := strings.TrimPrefix(c.Param("filepath"), "/")
+		if dir == "" {
+			serveIndex(c)
+			return
+		}
+
+		path := dir
+		if filepath != "" {
+			path += "/" + filepath
+		}
+
+		// SPA 回退: 非静态资源请求返回 index.html
+		f, err := sub.Open(path)
+		if err != nil {
+			serveIndex(c)
+			return
+		}
+		f.Close()
+
+		c.Request.URL.Path = "/" + path
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})
 }
