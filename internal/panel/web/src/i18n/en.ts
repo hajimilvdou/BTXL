@@ -208,6 +208,6 @@ const en: TranslationKeys = {
     en: 'English',
     switchLanguage: 'Switch Language',
   },
-} as const
+}
 
 export default en

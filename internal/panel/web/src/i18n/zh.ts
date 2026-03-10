@@ -3,6 +3,10 @@
  * 按模块分组：通用 / 导航 / 认证 / 用户 / 管理
  * ============================================================ */
 
+type DeepStringify<T> = {
+  [K in keyof T]: T[K] extends string ? string : DeepStringify<T[K]>
+}
+
 const zh = {
   /* ----------------------------------------------------------
    * 通用
@@ -208,5 +212,6 @@ const zh = {
   },
 } as const
 
-export type TranslationKeys = typeof zh
+export type TranslationSchema = typeof zh
+export type TranslationKeys = DeepStringify<TranslationSchema>
 export default zh

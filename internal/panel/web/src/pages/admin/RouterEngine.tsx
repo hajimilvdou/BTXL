@@ -76,10 +76,10 @@ function WeightSlider({
   onChange,
   onCommit,
 }: {
-  credentialId: number
+  credentialId: string
   value: number
-  onChange: (id: number, w: number) => void
-  onCommit: (id: number, w: number) => void
+  onChange: (id: string, w: number) => void
+  onCommit: (id: string, w: number) => void
 }) {
   return (
     <div className="flex items-center gap-3">
@@ -165,13 +165,13 @@ export default function RouterEngine() {
     catch (err) { setError(err instanceof Error ? err.message : '更新策略失败') }
   }
 
-  const handleWeightChange = (id: number, weight: number) => {
+  const handleWeightChange = (id: string, weight: number) => {
     setCredentials((prev) =>
       prev.map((c) => (c.credential_id === id ? { ...c, weight } : c)),
     )
   }
 
-  const handleWeightCommit = async (id: number, weight: number) => {
+  const handleWeightCommit = async (id: string, weight: number) => {
     try { await updateCredentialWeight(id, weight) }
     catch (err) { setError(err instanceof Error ? err.message : '更新权重失败') }
   }
